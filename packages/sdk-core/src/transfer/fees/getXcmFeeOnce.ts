@@ -47,11 +47,13 @@ export const getXcmFeeOnce = async <
 }: TGetXcmFeeInternalOptions<TApi, TRes, TSigner, TDisableFallback, TCustomChain>): Promise<
   TGetXcmFeeResult<TDisableFallback, TCustomChain>
 > => {
+  const preSwapDest = swapConfig ? swapConfig.exchangeChain : destination
+
   const resolvedFeeAsset = feeAsset
-    ? resolveFeeAsset(api, feeAsset, origin, destination, currency)
+    ? resolveFeeAsset(api, feeAsset, origin, preSwapDest, currency)
     : undefined
 
-  const { asset, assets } = resolveCurrency(api, currency, resolvedFeeAsset, origin, destination)
+  const { asset, assets } = resolveCurrency(api, currency, resolvedFeeAsset, origin, preSwapDest)
 
   const resolvedVersion = pickCompatibleXcmVersion(api, origin, destination, version)
 
@@ -68,7 +70,7 @@ export const getXcmFeeOnce = async <
     api,
     tx,
     origin,
-    destination,
+    destination: preSwapDest,
     sender,
     feeAsset,
     currency,
