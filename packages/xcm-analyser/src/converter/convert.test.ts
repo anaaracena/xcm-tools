@@ -570,4 +570,19 @@ describe('convert', () => {
 
     expect(convertLocationToUrl(location)).toBe(expected);
   });
+
+  it('escapes delimiters in Plurality string parts to prevent fake extra junctions (#2546)', () => {
+    const location: Location = {
+      parents: 1,
+      interior: {
+        X2: [
+          { Parachain: 1000 },
+          { Plurality: { id: 'Unit', part: 'x)/Parachain(1337' } },
+        ],
+      },
+    };
+
+    const result = convertLocationToUrl(location);
+    expect(result).toBe('../Parachain(1000)/Plurality(Unit, x\\)\\/Parachain\\(1337)');
+  });
 });

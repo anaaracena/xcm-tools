@@ -31,11 +31,13 @@ export const dryRunInternal = async <TApi, TRes, TSigner, TCustomChain extends s
     useRootOrigin = false
   } = options
 
+  const preSwapDest = swapConfig ? swapConfig.exchangeChain : destination
+
   const resolvedFeeAsset = feeAsset
-    ? resolveFeeAsset(api, feeAsset, origin, destination, currency)
+    ? resolveFeeAsset(api, feeAsset, origin, preSwapDest, currency)
     : undefined
 
-  const { assets, asset } = resolveCurrency(api, currency, resolvedFeeAsset, origin, destination)
+  const { assets, asset } = resolveCurrency(api, currency, resolvedFeeAsset, origin, preSwapDest)
 
   const { amount } = asset
 

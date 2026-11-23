@@ -193,7 +193,7 @@ export const getSwapExecuteOriginXcmFee = async <
     api,
     buildTx,
     origin: origin?.chain ?? exchange.chain,
-    destination: destination?.chain ?? exchange.chain,
+    destination: exchange.chain,
     sender: evmSenderAddress ?? sender,
     currency: { ...currencyFrom, amount },
     feeAsset,

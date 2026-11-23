@@ -229,6 +229,28 @@ describe('getExecuteSwapInfo', () => {
     expect(result.destination.isExchange).toBeUndefined();
   });
 
+  it('passes exchange.chain as origin to buildDestInfo when origin is different from exchange (#2548)', async () => {
+    const optionsWithOriginAndDest = {
+      ...baseOptions,
+      origin: { api: mockApi, chain: 'Polkadot', assetFrom: dotAsset },
+      destination: { chain: 'Darwinia', address: 'Carol' },
+    } as typeof baseOptions;
+
+    await getExecuteSwapInfo(dex, optionsWithOriginAndDest);
+
+    expect(findAssetInfoOrThrow).toHaveBeenCalledWith(
+      'Polkadot',
+      baseOptions.currencyFrom,
+      'Hydration',
+    );
+    expect(buildDestInfo).toHaveBeenCalledWith(
+      expect.objectContaining({
+        origin: 'Hydration',
+        destination: 'Darwinia',
+      }),
+    );
+  });
+
   it('falls back to sender when no recipient is supplied', async () => {
     const { recipient: _recipient, ...rest } = baseOptions as typeof baseOptions & {
       recipient?: string;

@@ -20,14 +20,17 @@ const convertNetworkToReadable = (network: TNetworkId): string => {
   return unitNetwork.charAt(0).toUpperCase() + unitNetwork.slice(1);
 };
 
+const escapeDelimiters = (value: string): string =>
+  value.replace(/\\/g, '\\\\').replace(/\//g, '\\/').replace(/\(/g, '\\(').replace(/\)/g, '\\)');
+
 const convertBodyIdToReadable = (id: TJunctionPlurality['Plurality']['id']): string => {
-  if (id === null || typeof id === 'string') return String(id);
+  if (id === null || typeof id === 'string') return id === null ? 'null' : escapeDelimiters(id);
   if ('Moniker' in id) return `Moniker(${id.Moniker})`;
   return `Index(${id.Index})`;
 };
 
 const convertBodyPartToReadable = (part: TJunctionPlurality['Plurality']['part']): string => {
-  if (part === null || typeof part === 'string') return String(part);
+  if (part === null || typeof part === 'string') return part === null ? 'null' : escapeDelimiters(part);
   if ('Members' in part) return `Members(count: ${part.Members.count})`;
 
   if ('Fraction' in part) {
