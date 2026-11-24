@@ -1,4 +1,4 @@
-import { extractAssetLocation, normalizeLocation } from '@paraspell/assets'
+import { extractAssetLocation, isSymbolMatch, normalizeLocation } from '@paraspell/assets'
 import type { TLocation } from '@paraspell/sdk-common'
 import {
   deepEqual,
@@ -26,11 +26,20 @@ import { createEdExchangeInstructions } from '../../utils/transfer/createEdExcha
 import { getFeeAssetLocation } from './createContext'
 
 const resolveBuyExecutionAmount = <TApi, TRes, TSigner, TCustomChain extends string = never>(
-  { isRelayAsset, assetInfo }: TTypeAndThenCallContext<TApi, TRes, TSigner, TCustomChain>,
+  { isRelayAsset, assetInfo, dest }: TTypeAndThenCallContext<TApi, TRes, TSigner, TCustomChain>,
   isForFeeCalc: boolean,
   { hopFees, destFee }: TTypeAndThenFees,
   systemAssetAmount: bigint
 ) => {
+  if (
+    dest.chain === 'Ajuna' &&
+    (isSymbolMatch(assetInfo.symbol, 'USDt') || isSymbolMatch(assetInfo.symbol, 'USDC'))
+  ) {
+    const minStableFee = 50000n
+    if (destFee > 0n) return destFee > minStableFee ? destFee : minStableFee
+    return minStableFee
+  }
+
   if (isForFeeCalc) {
     // Rough estimates for dummy XCM call, that is later dryRunned
     return isRelayAsset ? assetInfo.amount / 2n : systemAssetAmount / 2n
@@ -38,6 +47,24 @@ const resolveBuyExecutionAmount = <TApi, TRes, TSigner, TCustomChain extends str
 
   // We have actual fees, calculate exact buy execution amount
   return isRelayAsset ? assetInfo.amount - hopFees : destFee
+}
+
+export const resolveBuyExecutionWeight = <TApi, TRes, TSigner, TCustomChain extends string = never>(
+  context: TTypeAndThenCallContext<TApi, TRes, TSigner, TCustomChain>
+) => {
+  const { dest, assetInfo } = context
+  if (
+    dest.chain === 'Ajuna' &&
+    (isSymbolMatch(assetInfo.symbol, 'USDt') || isSymbolMatch(assetInfo.symbol, 'USDC'))
+  ) {
+    return {
+      Limited: {
+        ref_time: 4000000000n,
+        proof_size: 64000n
+      }
+    }
+  }
+  return 'Unlimited'
 }
 
 const resolveSnowbridgeMessageId = <TApi, TRes, TSigner, TCustomChain extends string = never>({
@@ -245,7 +272,7 @@ export const createCustomXcm = async <TApi, TRes, TSigner, TCustomChain extends 
     const buyExecution = {
       BuyExecution: {
         fees: buyExecutionAsset,
-        weight_limit: 'Unlimited'
+        weight_limit: resolveBuyExecutionWeight(context)
       }
     }
 

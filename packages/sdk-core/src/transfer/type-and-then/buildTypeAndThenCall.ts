@@ -1,5 +1,6 @@
 import {
   extractAssetLocation,
+  isSymbolMatch,
   normalizeLocation,
   type TAsset,
   type TAssetInfo
@@ -32,6 +33,24 @@ export const resolveTransferType = <TApi, TRes, TSigner, TCustomChain extends st
   if (canTeleport && !isSubBridge) return 'Teleport'
   if (origin.chain === assetReserveChain) return 'LocalReserve'
   return 'DestinationReserve'
+}
+
+export const resolveWeightLimit = <TApi, TRes, TSigner, TCustomChain extends string = never>(
+  context: TTypeAndThenCallContext<TApi, TRes, TSigner, TCustomChain>
+) => {
+  const { dest, assetInfo } = context
+  if (
+    dest.chain === 'Ajuna' &&
+    (isSymbolMatch(assetInfo.symbol, 'USDt') || isSymbolMatch(assetInfo.symbol, 'USDC'))
+  ) {
+    return {
+      Limited: {
+        ref_time: 4000000000n,
+        proof_size: 64000n
+      }
+    }
+  }
+  return 'Unlimited'
 }
 
 export const buildTypeAndThenCall = <TApi, TRes, TSigner, TCustomChain extends string = never>(
@@ -104,7 +123,7 @@ export const buildTypeAndThenCall = <TApi, TRes, TSigner, TCustomChain extends s
       remote_fees_id: addXcmVersionHeader(feeMultiAsset.id, version),
       fees_transfer_type: feesTransferType,
       custom_xcm_on_dest: addXcmVersionHeader(customXcm, version),
-      weight_limit: 'Unlimited'
+      weight_limit: resolveWeightLimit(context)
     }
   }
 }

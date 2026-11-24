@@ -6,6 +6,11 @@ import { transferPolkadotXcm } from '../../pallets/polkadotXcm'
 import type { TPolkadotXCMTransferOptions, TTransferLocalOptions } from '../../types'
 import { getChain } from '../../utils'
 import type Ajuna from './Ajuna'
+import {
+  DEFAULT_AJUNA_STABLE_WEIGHT,
+  calculateAjunaStableFee,
+  isAjunaStableAsset
+} from './Ajuna'
 
 vi.mock('../../pallets/polkadotXcm')
 vi.mock('../../transfer')
@@ -87,6 +92,29 @@ describe('Ajuna', () => {
           keep_alive: false
         }
       })
+    })
+  })
+
+  describe('BuyExecution weight and fee configuration for stablecoins', () => {
+    it('correctly classifies stablecoin assets', () => {
+      expect(isAjunaStableAsset('USDt')).toBe(true)
+      expect(isAjunaStableAsset('USDC')).toBe(true)
+      expect(isAjunaStableAsset('DOT')).toBe(false)
+      expect(isAjunaStableAsset('BAJU')).toBe(false)
+    })
+
+    it('calculates minimum execution fee for stable assets avoiding TooExpensive', () => {
+      expect(calculateAjunaStableFee('USDt')).toBe(50000n)
+      expect(calculateAjunaStableFee('USDC')).toBe(50000n)
+      expect(calculateAjunaStableFee('USDt', 100000n)).toBe(100000n)
+      expect(calculateAjunaStableFee('DOT', 1000n)).toBe(1000n)
+    })
+
+    it('returns limited execution weight for stable assets and undefined for other assets', () => {
+      expect(chain.getExecutionWeight('USDt')).toEqual(DEFAULT_AJUNA_STABLE_WEIGHT)
+      expect(chain.getExecutionWeight('USDC')).toEqual(DEFAULT_AJUNA_STABLE_WEIGHT)
+      expect(chain.getExecutionWeight('DOT')).toBeUndefined()
+      expect(chain.getExecutionWeight('BAJU')).toBeUndefined()
     })
   })
 })

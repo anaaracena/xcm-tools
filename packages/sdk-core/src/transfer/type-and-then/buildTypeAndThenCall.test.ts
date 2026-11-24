@@ -392,9 +392,31 @@ describe('buildTypeAndThenCall', () => {
     })
   })
 
-  it('should always set weight_limit to Unlimited', () => {
+  it('should always set weight_limit to Unlimited for default chains', () => {
     const result = buildTypeAndThenCall(mockContext, false, mockCustomXcm, mockAssets)
     expect(result.params.weight_limit).toBe('Unlimited')
+  })
+
+  it('should set weight_limit to Limited for Ajuna destination with stablecoin', () => {
+    const ajunaContext = {
+      ...mockContext,
+      dest: {
+        ...mockContext.dest,
+        chain: 'Ajuna'
+      },
+      assetInfo: {
+        ...mockContext.assetInfo,
+        symbol: 'USDt'
+      }
+    } as TTypeAndThenCallContext<unknown, unknown, unknown>
+
+    const result = buildTypeAndThenCall(ajunaContext, false, mockCustomXcm, mockAssets)
+    expect(result.params.weight_limit).toEqual({
+      Limited: {
+        ref_time: 4000000000n,
+        proof_size: 64000n
+      }
+    })
   })
 
   it('should use fee asset from overriddenAsset array when provided', () => {
